@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw Data Fetcher</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1e1e1e;
+            border: 1px solid #2d2d2d;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 650px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .title {
+            text-align: center;
+            font-family: monospace;
+            font-size: 16px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-family: monospace;
+            font-size: 13px;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: #2a2a2a;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #0070f3;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0070f3;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        button:disabled {
+            background-color: #555555;
+            cursor: not-allowed;
+        }
+        .status-line {
+            text-align: center;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 15px 0 10px 0;
+            display: none;
+        }
+        .status-success {
+            color: #22c55e;
+        }
+        .status-fail {
+            color: #eab308;
+        }
+        .output-box {
+            background-color: #0d0d0d;
+            border: 1px solid #2d2d2d;
+            border-radius: 4px;
+            padding: 15px;
+            color: #22c55e;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 380px;
+            overflow-y: auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="title">Raw Data Fetcher (No Format Change)</div>
+    
+    <div class="form-group">
+        <label>Target URL:</label>
+        <input type="text" id="targetUrl" placeholder="https://example.com/playlist.m3u8">
+    </div>
+
+    <div class="form-group">
+        <label>Referer Link:</label>
+        <input type="text" id="refererLink" placeholder="Enter Referer">
+    </div>
+
+    <div class="form-group">
+        <label>Method:</label>
+        <select id="httpMethod">
+            <option value="GET" selected>GET</option>
+            <option value="POST">POST</option>
+            <option value="HEAD">HEAD</option>
+        </select>
+    </div>
+
+    <button id="fetchBtn" onclick="fetchData()">FETCH DATA</button>
+
+    <div id="statusLine" class="status-line"></div>
+    <div id="outputBox" class="output-box"></div>
+</div>
+
+<script>
+    async function fetchData() {
+        const url = document.getElementById('targetUrl').value.trim();
+        const referer = document.getElementById('refererLink').value.trim();
+        const method = document.getElementById('httpMethod').value;
+        const fetchBtn = document.getElementById('fetchBtn');
+        const statusLine = document.getElementById('statusLine');
+        const outputBox = document.getElementById('outputBox');
+
+        if (!url) {
+            alert('Please enter a Target URL');
+            return;
+        }
+
+        fetchBtn.disabled = true;
+        fetchBtn.innerText = 'FETCHING...';
+        statusLine.style.display = 'none';
+        outputBox.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/fetch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, referer, method })
+            });
+
+            const result = await response.json();
+
+            statusLine.style.display = 'block';
+            outputBox.style.display = 'block';
+
+            if (result.statusCode >= 200 && result.statusCode < 300) {
+                statusLine.className = 'status-line status-success';
+                statusLine.innerText = `Success! HTTP Code: ${result.statusCode}`;
+            } else {
+                statusLine.className = 'status-line status-fail';
+                statusLine.innerText = `Failed! HTTP Code: ${result.statusCode}`;
+            }
+
+            outputBox.innerText = result.data;
+        } catch (err) {
+            statusLine.style.display = 'block';
+            statusLine.className = 'status-line status-fail';
+            statusLine.innerText = 'Request Failed!';
+            outputBox.style.display = 'block';
+            outputBox.innerText = err.message;
+        } finally {
+            fetchBtn.disabled = false;
+            fetchBtn.innerText = 'FETCH DATA';
+        }
+    }
+</script>
+
+</body>
+</html>
